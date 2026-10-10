@@ -43,6 +43,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             ["/tournaments", "Torneios"],
             ["/models", "Modelos"],
             ["/games", "Partidas"],
+            ["/practice", "Posições"],
             ["/settings", "Ajustes"],
           ].map(([url, name]) => (
             <Link key={url} href={url} className={path === url ? "active" : ""}>

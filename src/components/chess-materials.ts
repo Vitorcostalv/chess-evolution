@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { THEMES, type Appearance } from "@/services/games/appearance";
 import type { PieceSymbol } from "chess.js";
 
 // All studio assets are procedural: no remote textures, HDRs or model requests.
@@ -26,7 +27,10 @@ function grain(size: number, dark: boolean) {
   return texture;
 }
 
-export function chessMaterials(quality: "low" | "medium" | "high") {
+export function chessMaterials(
+  quality: "low" | "medium" | "high",
+  appearance: Appearance = THEMES.classic,
+) {
   const segments = quality === "high" ? 64 : quality === "medium" ? 48 : 24;
   const base: [number, number][] = [
     [0, 0],
@@ -186,16 +190,16 @@ export function chessMaterials(quality: "low" | "medium" | "high") {
   const lightWood = grain(quality === "low" ? 128 : 256, false);
   const darkWood = grain(quality === "low" ? 128 : 256, true);
   const white = new THREE.MeshPhysicalMaterial({
-    color: "#e0ccb0",
-    roughness: 0.26,
-    metalness: 0,
+    color: appearance.white,
+    roughness: appearance.finish === "matte" ? 0.7 : 0.26,
+    metalness: appearance.finish === "metallic" ? 0.5 : 0,
     clearcoat: 0.32,
     clearcoatRoughness: 0.24,
   });
   const black = new THREE.MeshPhysicalMaterial({
-    color: "#30373a",
-    roughness: 0.27,
-    metalness: 0.06,
+    color: appearance.black,
+    roughness: appearance.finish === "matte" ? 0.7 : 0.27,
+    metalness: appearance.finish === "metallic" ? 0.6 : 0.06,
     clearcoat: 0.4,
     clearcoatRoughness: 0.23,
   });
@@ -205,20 +209,22 @@ export function chessMaterials(quality: "low" | "medium" | "high") {
     roughness: 0.32,
   });
   const lightTile = new THREE.MeshStandardMaterial({
-    map: lightWood,
+    map: appearance.preset === "classic" ? lightWood : null,
+    color: appearance.preset === "classic" ? "#ffffff" : appearance.light,
     roughness: 0.62,
   });
   const darkTile = new THREE.MeshStandardMaterial({
-    map: darkWood,
+    map: appearance.preset === "classic" ? darkWood : null,
+    color: appearance.preset === "classic" ? "#ffffff" : appearance.dark,
     roughness: 0.56,
   });
   const frame = new THREE.MeshStandardMaterial({
     map: darkWood,
-    color: "#a79786",
+    color: appearance.border,
     roughness: 0.4,
   });
   const selected = new THREE.MeshStandardMaterial({
-    color: "#bda671",
+    color: appearance.selected,
     roughness: 0.5,
   });
   const atlas = document.createElement("canvas");

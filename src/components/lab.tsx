@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Play, Pause, Square, ArrowUpRight, FlaskConical } from "lucide-react";
 import { useLab } from "@/stores/lab";
 import type { Preset, TrainingConfig } from "@/types/domain";
+import { NeuralEvidence } from "./neural-evidence";
 const defaults: TrainingConfig = {
   games: 2,
   simulations: 8,
@@ -81,6 +82,21 @@ export function Lab() {
           Registro de modelos <ArrowUpRight size={17} />
         </Link>
       </section>
+      <ol className="training-pipeline" aria-label="Fluxo de evolução neural">
+        {[
+          "Gerar partidas",
+          "Preparar exemplos",
+          "Treinar candidata",
+          "Salvar checkpoint",
+          "Avaliar",
+          "Promover ou preservar campeão",
+        ].map((step, i) => (
+          <li key={step}>
+            <span>{i + 1}</span>
+            {step}
+          </li>
+        ))}
+      </ol>
       <div className="content-grid">
         <div className="stack">
           <section className="panel">
@@ -151,6 +167,51 @@ export function Lab() {
                 ))}
               </select>
             </label>
+            <label>
+              Orçamento da sessão
+              <select
+                aria-label="Orçamento da sessão"
+                defaultValue="manual"
+                onChange={(event) => {
+                  if (event.target.value === "mobile") {
+                    setPreset("tiny");
+                    setConfig({
+                      ...defaults,
+                      games: 2,
+                      simulations: 4,
+                      maxPlies: 16,
+                      epochs: 1,
+                      batchSize: 8,
+                      bufferCapacity: 128,
+                    });
+                  }
+                  if (event.target.value === "desktop") {
+                    setPreset("standard");
+                    setConfig({
+                      ...defaults,
+                      games: 4,
+                      simulations: 24,
+                      maxPlies: 80,
+                      epochs: 4,
+                      batchSize: 16,
+                      bufferCapacity: 1024,
+                    });
+                  }
+                }}
+              >
+                <option value="mobile">
+                  Celular · sessão curta / criar Tiny
+                </option>
+                <option value="desktop">
+                  Desktop · orçamento intermediário / criar Standard
+                </option>
+                <option value="manual">Avançado · parâmetros manuais</option>
+              </select>
+            </label>
+            <p className="description">
+              O preset ajusta o orçamento e a arquitetura da próxima
+              inicialização. Um modelo já existente mantém sua arquitetura.
+            </p>
             <div className="form-grid">
               {[
                 ["games", "Partidas", 1, 8],
@@ -329,6 +390,15 @@ export function Lab() {
               </div>
             </div>
             <div className="chart-label">
+              <p className="description">
+                Exemplos no dataset:{" "}
+                {e?.datasetIds?.length ?? "ainda não preparado"}. Checkpoints
+                salvos: {e?.checkpoints ?? "não registrado nesta sessão"}.
+                Encerramentos:{" "}
+                {e?.endings
+                  ? `${e.endings.rules} pelas regras; ${e.endings.budget} pelo limite de jogadas.`
+                  : "não registrados nesta sessão"}
+              </p>
               <span>LOSS TOTAL / LOTE</span>
               <span>
                 {lab.backend} ·{" "}
@@ -444,6 +514,7 @@ export function Lab() {
           </section>
         </div>
       </div>
+      <NeuralEvidence />
       {lab.error && (
         <div role="alert" className="notice error">
           {lab.error}

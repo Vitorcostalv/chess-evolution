@@ -22,6 +22,8 @@ export type SearchResult = {
 };
 export type GameResult = { result: "1-0" | "0-1" | "1/2-1/2"; reason: string };
 export type ArenaSession = {
+  increment?: number;
+  clockHistory?: { w: number; b: number }[];
   blackModelId?: string;
   id: string;
   createdAt: string;
@@ -36,6 +38,8 @@ export type ArenaSession = {
   result: GameResult | null;
 };
 export type StoredGame = {
+  termination?: "rules" | "budget" | "time" | "unfinished";
+  evaluationId?: string;
   id: string;
   name: string;
   pgn: string;
@@ -68,6 +72,16 @@ export type Checkpoint = {
   hash: string;
 };
 export type EvaluationRecord = {
+  gameIds?: string[];
+  conditions?: {
+    simulations: number;
+    maxPlies: number;
+    games: number;
+    opponentHash: string;
+    candidateHash: string;
+    reference: string;
+  };
+  rejectionReason?: string;
   id: string;
   opponent: string;
   games: number;
@@ -133,6 +147,8 @@ export type LogEntry = {
   message: string;
 };
 export type Experiment = {
+  endings?: { rules: number; budget: number };
+  checkpoints?: number;
   datasetIds?: string[];
   validationGameIds?: string[];
   id: string;
@@ -151,6 +167,9 @@ export type Experiment = {
   completedGames: number;
 };
 export type Preferences = {
+  appearance: import("@/services/games/appearance").Appearance;
+  animation: "normal" | "fast" | "off";
+  animationDuration: number;
   graphics: "low" | "medium" | "high";
   board: "3d" | "2d";
   camera: "isometric" | "top";
@@ -183,6 +202,21 @@ export type Tournament = {
   maxPlies: number;
 };
 export const DEFAULT_PREFERENCES: Preferences = {
+  appearance: {
+    preset: "classic",
+    light: "#d3be97",
+    dark: "#563825",
+    white: "#e0ccb0",
+    black: "#30373a",
+    border: "#433023",
+    selected: "#e6c477",
+    lastMove: "#bb9a58",
+    legal: "#e7cb8a",
+    check: "#da786b",
+    finish: "polished",
+  },
+  animation: "normal",
+  animationDuration: 240,
   graphics: "medium",
   board: "3d",
   camera: "isometric",

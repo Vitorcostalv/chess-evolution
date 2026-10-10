@@ -524,14 +524,14 @@ footer i {
 }
 .square.light,
 .square.light:hover:not(:disabled) {
-  background: #ad9a7c;
+  background: var(--chess-light, #d3be97);
 }
 .square.dark,
 .square.dark:hover:not(:disabled) {
-  background: #52615c;
+  background: var(--chess-dark, #563825);
 }
 .square.selected {
-  box-shadow: inset 0 0 0 4px #ecd39b;
+  box-shadow: inset 0 0 0 4px var(--chess-selected, #ecd39b);
 }
 .square.legal:after {
   content: "";
@@ -539,7 +539,7 @@ footer i {
   width: 15%;
   height: 15%;
   border-radius: 100%;
-  background: #edddb999;
+  background: var(--chess-legal, #edddb9);
   pointer-events: none;
 }
 .white-piece {
@@ -1058,5 +1058,404 @@ footer i {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Evolution: board-led play, vector pieces, appearance and review. */
+.compact-arena .page-heading {
+  padding: 22px 0 18px;
+  margin-bottom: 0;
+  align-items: center;
+}
+.compact-arena .page-heading h1 {
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 1.05;
+  margin: 8px 0 0;
+}
+.compact-arena .page-heading h1 br {
+  display: none;
+}
+.compact-arena .page-heading h1 em {
+  margin-left: 0.22em;
+}
+.compact-arena .page-heading p {
+  display: none;
+}
+.compact-arena .board-stage {
+  height: min(58vw, calc(100svh - 440px), 620px);
+  min-height: 300px;
+}
+.board-clocks {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: #101719;
+}
+.board-clocks > div {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  gap: 10px;
+  border-bottom: 2px solid transparent;
+}
+.board-clocks > div + div {
+  border-left: 1px solid var(--line);
+}
+.board-clocks span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.board-clocks strong {
+  font-size: 24px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.board-clocks .active-clock {
+  background: #b79b7310;
+  border-bottom-color: var(--gold);
+}
+.board-clocks .active-clock span {
+  color: var(--text);
+}
+.board-toolbar {
+  flex-wrap: wrap;
+}
+.board-toolbar button,
+.replay-controls button,
+.arena-tabs button {
+  min-width: 42px;
+  min-height: 42px;
+}
+.board-2d {
+  border-color: var(--chess-border, #433023);
+}
+.square.last-move:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 3px var(--chess-lastMove);
+  border-radius: 0;
+  pointer-events: none;
+}
+.square.in-check:before {
+  content: "!";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 4px var(--chess-check);
+  color: var(--chess-check);
+  font-size: 14px;
+  text-align: right;
+  padding: 2px 4px;
+  pointer-events: none;
+}
+.square:focus-visible {
+  z-index: 3;
+  outline: 3px solid var(--chess-selected);
+  outline-offset: -3px;
+}
+.piece-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.svg-piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12.5%;
+  height: 12.5%;
+  padding: 0.8%;
+  display: grid;
+  place-items: center;
+  transition-property: transform, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1), ease-out;
+  filter: drop-shadow(0 2px 1px #0005);
+}
+.svg-piece svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.promotion svg {
+  width: 46px;
+  height: 40px;
+}
+.promotion button {
+  min-width: 58px;
+  min-height: 58px;
+}
+.arena-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.arena-tabs button {
+  flex: 1;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  padding: 8px;
+}
+.arena-tabs [aria-selected="true"] {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+.arena-sidebar .mobile-panel-hidden {
+  display: none;
+}
+.game-config summary,
+.review-analysis summary {
+  cursor: pointer;
+  color: var(--gold);
+  padding: 10px 0;
+}
+.move-list button {
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  min-height: 36px;
+}
+.material-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 14px 20px;
+}
+.captured-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 80px;
+}
+.captured-pieces svg {
+  width: 28px;
+  height: 25px;
+}
+.replay-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px 20px;
+}
+.replay-controls label {
+  margin: 0;
+  font-size: 11px;
+  min-width: 125px;
+}
+.replay-controls select {
+  padding: 8px;
+}
+.replay-controls .description {
+  width: 100%;
+  margin: 0;
+}
+.review-analysis {
+  margin-top: 14px;
+}
+.review-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.fallback-note {
+  padding: 10px 16px;
+  color: var(--muted);
+  font-size: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.fallback-note button {
+  min-height: 40px;
+  padding: 8px 12px;
+}
+.theme-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.theme-presets button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 46px;
+  font-size: 12px;
+}
+.theme-presets span {
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  border: 1px solid #ffffff30;
+  flex-shrink: 0;
+}
+.theme-presets [aria-pressed="true"] {
+  border-color: var(--gold);
+}
+.appearance-preview {
+  height: 280px;
+  margin: 20px auto;
+  max-width: 300px;
+}
+.appearance-preview .board-2d {
+  width: 260px;
+  max-width: 100%;
+}
+.color-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.color-controls label {
+  font-size: 11px;
+}
+.color-controls input {
+  padding: 3px;
+  width: 100%;
+  height: 38px;
+  cursor: pointer;
+}
+.training-pipeline {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.training-pipeline li {
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding: 12px 8px;
+  font-size: 12px;
+}
+.training-pipeline span {
+  display: block;
+  color: var(--gold);
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+.chart-label .description {
+  max-width: 55%;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .compact-arena .page-heading {
+    padding: 16px 0;
+  }
+  .compact-arena .page-heading .eyebrow,
+  .compact-arena .page-heading .text-link {
+    display: none;
+  }
+  .compact-arena .page-heading h1 {
+    font-size: 27px;
+  }
+  .compact-arena .board-stage {
+    height: min(100vw, 430px);
+    min-height: 300px;
+  }
+  .board-clocks > div {
+    padding: 11px 12px;
+  }
+  .board-clocks strong {
+    font-size: 22px;
+  }
+  .board-clocks span {
+    font-size: 10px;
+  }
+  .board-toolbar {
+    padding: 8px;
+    gap: 4px;
+  }
+  .board-toolbar > div {
+    flex-wrap: wrap;
+  }
+  .arena-sidebar {
+    gap: 10px;
+  }
+  .arena-sidebar .panel {
+    padding: 16px;
+  }
+  .arena-tabs {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 4;
+  }
+  .material-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .training-pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .color-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chart-label {
+    flex-wrap: wrap;
+  }
+  .chart-label .description {
+    max-width: 100%;
+  }
+  .replay-controls {
+    padding: 12px;
+  }
+  .replay-controls button {
+    padding: 8px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svg-piece {
+    transition: none !important;
+  }
+}
+
+.mobile-sidebar-shell > summary {
+  display: none;
+}
+@media (max-width: 700px) {
+  .mobile-sidebar-shell > summary {
+    display: block;
+    padding: 14px 10px;
+    min-height: 46px;
+    border-bottom: 1px solid var(--line);
+    color: var(--gold);
+    cursor: pointer;
+  }
+}
+@media (min-width: 701px) {
+  .mobile-sidebar-shell > .arena-sidebar {
+    display: flex;
+  }
+}
+
+.piece-icon svg {
+  width: 25px;
+  height: 30px;
+}
+@media (max-width: 700px) {
+  .board-toolbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .board-toolbar > div {
+    display: contents;
+  }
+  .board-toolbar .divider {
+    display: none;
+  }
+  .board-toolbar .board-hint {
+    display: none;
   }
 }

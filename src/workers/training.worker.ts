@@ -14,11 +14,11 @@ import {
   trainBatch,
   validationLoss,
   tensorMemory,
-  checkpointHash,
 } from "@/ai/neural/network";
 import { playGeneratedGame, cooperate } from "@/ai/self-play/game";
 import { seededRandom } from "@/engine/search/mcts";
 import { evaluatePromotion } from "@/ai/evaluation/promotion";
+import { createCandidate } from "@/services/models/candidate";
 import type { ModelRecord, Experiment, Tournament } from "@/types/domain";
 import type { LabRequest, LabResponse } from "./protocol";
 declare const self: DedicatedWorkerGlobalScope;
@@ -144,27 +144,7 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
           throw new Error("Nenhuma sessão recuperável para esse modelo.");
         config = experiment.config;
       } else {
-        const { hash: unusedHash, ...old } = selected.checkpoint;
-        void unusedHash;
-        const content = {
-          ...old,
-          generation: selected.generation + 1,
-          learningRate: config.learningRate,
-          optimizer: [],
-        };
-        const checkpoint = { ...content, hash: await checkpointHash(content) };
-        selected = {
-          ...selected,
-          id: crypto.randomUUID(),
-          name: `${selected.name.split(" · g")[0]} · g${content.generation}`,
-          generation: content.generation,
-          parentId: selected.id,
-          createdAt: new Date().toISOString(),
-          checkpoint,
-          status: "candidate",
-          evaluations: [],
-          origin: "Candidata por self-play local",
-        };
+        selected = await createCandidate(selected, config.learningRate);
         await storage.saveModel(selected);
         emit({ type: "model", model: selected });
         experiment = {
@@ -176,6 +156,8 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
           metrics: [],
           logs: [],
           completedGames: 0,
+          endings: { rules: 0, budget: 0 },
+          checkpoints: 0,
         };
       }
       network = await restoreCheckpoint(selected.checkpoint);
@@ -223,6 +205,10 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
         await storage.saveGame(generated.game);
         await storage.addReplay(generated.examples, config.bufferCapacity);
         experiment.completedGames++;
+        if (experiment.endings)
+          experiment.endings[
+            generated.game.termination === "budget" ? "budget" : "rules"
+          ]++;
         log(
           `${generated.game.result?.result}: ${generated.game.result?.reason}. ${generated.examples.length} posições salvas.`,
           "game-complete",
@@ -323,6 +309,7 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
               `Checkpoint consistente após lote ${batchIndex}; pesos e estado Adam preservados.`,
               "checkpoint",
             );
+            if (experiment.checkpoints !== undefined) experiment.checkpoints++;
             await storage.saveTrainingCheckpoint(selected, experiment);
             emit({ type: "model", model: selected });
             emit({ type: "experiment", experiment, backend });
@@ -354,6 +341,7 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
         "Treinamento concluído. Candidata preservada; promoção exige avaliação competitiva.",
         "complete",
       );
+      if (experiment.checkpoints !== undefined) experiment.checkpoints++;
       await storage.saveTrainingCheckpoint(selected, experiment);
       emit({ type: "model", model: selected });
       emit({ type: "experiment", experiment, backend });
@@ -376,6 +364,8 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
       let wins = 0,
         draws = 0,
         losses = 0;
+      const gameIds: string[] = [];
+      const evaluationId = crypto.randomUUID();
       const expectedChampion =
         (await storage.models()).find((m) => m.status === "champion")?.id ??
         null;
@@ -405,6 +395,8 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
               });
           },
         });
+        game.evaluationId = evaluationId;
+        gameIds.push(game.id);
         await storage.saveGame(game);
         const result = game.result!.result;
         if (result === "1/2-1/2") draws++;
@@ -420,7 +412,26 @@ self.onmessage = async (event: MessageEvent<LabRequest>) => {
       if ((reference?.id ?? null) !== expectedChampion)
         summary.promoted = false;
       const record = {
-        id: crypto.randomUUID(),
+        id: evaluationId,
+        gameIds,
+        conditions: {
+          games,
+          simulations: sims,
+          maxPlies: Math.min(240, Math.max(16, request.maxPlies)),
+          opponentHash:
+            reference?.checkpoint.hash ?? "heuristic-v1-depth2-100ms",
+          candidateHash: candidate.checkpoint.hash,
+          reference: reference
+            ? "policy/value MCTS"
+            : "Negamax depth 2, 100 ms",
+        },
+        rejectionReason: summary.promoted
+          ? undefined
+          : (reference?.id ?? null) !== expectedChampion
+            ? "A referência usada não é o campeão atual."
+            : games < 8
+              ? "Amostra inferior a 8 partidas."
+              : "Pontuação ou limite Wilson insuficientes.",
         opponent: reference?.id ?? "heuristic",
         ...summary,
         at: new Date().toISOString(),

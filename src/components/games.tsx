@@ -130,7 +130,9 @@ export function Games() {
                         aria-label={`Revisar ${g.name}`}
                         title="Revisar na arena"
                         onClick={() => {
-                          useGame.getState().load(g.initialFen, g.pgn);
+                          useGame
+                            .getState()
+                            .load(g.initialFen, g.pgn, g.result);
                           useGame
                             .getState()
                             .configure({ mode: "local", running: false });

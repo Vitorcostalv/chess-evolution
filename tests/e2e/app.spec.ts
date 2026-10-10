@@ -145,6 +145,10 @@ test("mobile 2D game reaches checkmate and PGN library persists", async ({
   ]) {
     await page.getByRole("button", { name: new RegExp(`^${from} `) }).click();
     await page.getByRole("button", { name: new RegExp(`^${to} `) }).click();
+    await expect(page.locator(".board-section")).toHaveAttribute(
+      "data-transition",
+      "false",
+    );
   }
   await expect(page.locator(".result-banner")).toContainText("Xeque-mate");
   await page.screenshot({

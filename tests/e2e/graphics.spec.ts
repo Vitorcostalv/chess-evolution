@@ -14,6 +14,8 @@ test("studio board remains playable in 3D, with camera and quality changes", asy
     .getByRole("combobox", { name: "Modo", exact: true })
     .selectOption("local");
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  // Starting compacts the layout and animates the camera to its new fit.
+  await page.waitForTimeout(350);
   const canvas = page.locator("canvas");
   const bounds = await canvas.boundingBox();
   expect(bounds).not.toBeNull();
@@ -27,7 +29,7 @@ test("studio board remains playable in 3D, with camera and quality changes", asy
     100,
   );
   camera.position.set(9, 12, 10);
-  camera.zoom = Math.min(width, height) * 0.078;
+  camera.zoom = Math.min(width * 0.078, height * 0.102);
   camera.lookAt(0, 0.3, 0);
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
@@ -48,7 +50,9 @@ test("studio board remains playable in 3D, with camera and quality changes", asy
   await page.getByRole("button", { name: "Inverter tabuleiro" }).click();
   await expect(canvas).toBeVisible();
   await page.getByRole("link", { name: "Ajustes", exact: true }).click();
-  await page.getByRole("combobox").nth(0).selectOption("low");
+  await page
+    .getByRole("combobox", { name: "Perfil gráfico", exact: true })
+    .selectOption("low");
   await page.getByRole("link", { name: "Arena", exact: true }).click();
   await expect(page.locator("canvas")).toBeVisible();
   await page.waitForTimeout(700);
@@ -56,8 +60,12 @@ test("studio board remains playable in 3D, with camera and quality changes", asy
     .locator("canvas")
     .screenshot({ path: "test-results/board-top-low.png" });
   await page.getByRole("link", { name: "Ajustes", exact: true }).click();
-  await page.getByRole("combobox").nth(0).selectOption("high");
-  await page.getByRole("combobox").nth(2).selectOption("isometric");
+  await page
+    .getByRole("combobox", { name: "Perfil gráfico", exact: true })
+    .selectOption("high");
+  await page
+    .getByRole("combobox", { name: "Câmera", exact: true })
+    .selectOption("isometric");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("link", { name: "Arena", exact: true }).click();
   await expect(page.locator("canvas")).toBeVisible();

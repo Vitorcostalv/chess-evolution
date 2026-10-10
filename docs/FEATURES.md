@@ -6,6 +6,12 @@ Uma plataforma de xadrez que reúne jogo, análise e experimentação com inteli
 
 ## Arena e apresentação
 
+- Animações nos dois modos (normal/rápida/desativada), arco do cavalo no 3D, capturas discretas, roque coordenado, en passant na casa correta e som ao fim visual. Veja [estado e verificação](EVOLUTION_REPORT.md), com testes e capturas locais.
+- Aparência Clássico, Mineral, Bronze ou Alto contraste; nove cores independentes, acabamentos 3D, prévia e padrões restauráveis.
+- Relógios adicionais 3+2, 5+3, 10+5 e sem relógio; tempo decorrido e incremento único. Replay com velocidade ajustável, cursor separado e histórico SAN clicável.
+- Dicas graduais de peça, destino e linha calculada; dificuldade por orçamento; IA × IA com velocidade e avanço de um lance.
+- Revisão em Worker com gráfico na perspectiva das brancas, maiores mudanças, sugestões/alternativas e cancelamento. Página Posições com FEN, reinício, final básico e mates em um verificados.
+- Neural Lab com fluxo visual, presets de sessão, evidências de exemplos/checkpoints/encerramentos; comparação de gerações sob condições registradas equivalentes e reprodução das partidas avaliadas.
 - Humano × IA, IA × IA com escolha independente do motor de cada lado, e dois jogadores no mesmo dispositivo.
 - Escolha de brancas ou pretas; relógios de 5, 10 ou 30 minutos; pausar, continuar e iniciar nova partida.
 - Tabuleiro 3D com seis peças procedurais: curvas suaves, cavalo esculpido, bispo com abertura na mitra, torre com ameias curvas, coroa da dama e cruz do rei com bordas suaves.

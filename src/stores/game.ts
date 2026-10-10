@@ -11,9 +11,21 @@ import type {
 } from "@/types/domain";
 import { storage } from "@/services/storage/database";
 import { usePreferences } from "@/stores/preferences";
+import { elapsedClock, timeoutResult } from "@/services/games/clocks";
 import { personalExamples } from "@/ai/self-play/personal";
 const initial = new Chess();
 type State = {
+  visualToken: number;
+  visualPending: boolean;
+  visualSound: boolean;
+  visualDuration: number;
+  completeVisual: (token: number) => void;
+  increment: number;
+  clockAt: number | null;
+  clockHistory: { w: number; b: number }[];
+  aiDelay: number;
+  stepRequest: number;
+  step: () => void;
   gameId: string;
   createdAt: string;
   persist: () => Promise<void>;
@@ -25,7 +37,7 @@ type State = {
   selected: Square | null;
   legal: Square[];
   promotion: { from: Square; to: Square } | null;
-  redo: MoveInput[];
+  redo: (MoveInput & { seconds?: { w: number; b: number } })[];
   result: GameResult | null;
   mode: "human" | "ai" | "local";
   human: Color;
@@ -43,7 +55,7 @@ type State = {
   move: (input: MoveInput) => void;
   promote: (piece: PieceSymbol) => void;
   reset: () => void;
-  load: (fen: string, pgn?: string) => void;
+  load: (fen: string, pgn?: string, reportedResult?: GameResult | null) => void;
   undo: () => void;
   forward: () => void;
   tick: () => void;
@@ -59,6 +71,8 @@ type State = {
         | "blackModelId"
         | "search"
         | "timeControl"
+        | "increment"
+        | "aiDelay"
       >
     >,
   ) => void;
@@ -80,13 +94,37 @@ function sound() {
     osc.connect(gain).connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.1);
-    osc.onended = () => void ctx.close();
+    const cleanup = setTimeout(() => void ctx.close(), 400);
+    osc.onended = () => {
+      clearTimeout(cleanup);
+      void ctx.close();
+    };
   } catch {
     /* Optional audio may be blocked by the browser. */
   }
 }
-function update(c: Chess) {
+function update(c: Chess, animate = false, notify = false) {
+  const state = useGame.getState();
+  const pref = usePreferences.getState().value;
+  const reduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const duration =
+    !animate ||
+    reduced ||
+    pref.animation === "off" ||
+    (state.mode === "ai" && state.aiDelay === 0)
+      ? 0
+      : pref.animation === "fast"
+        ? 120
+        : pref.animationDuration;
   useGame.setState({
+    visualToken: state.visualToken + 1,
+    visualPending: animate && duration > 0,
+    visualSound: notify,
+    visualDuration: duration,
+    clockAt: state.running && !gameResult(c) ? Date.now() : null,
+    running: gameResult(c) ? false : state.running,
     fen: c.fen(),
     pgn: c.pgn(),
     history: c.history(),
@@ -102,6 +140,30 @@ function update(c: Chess) {
   void useGame.getState().persist();
 }
 export const useGame = create<State>((set, get) => ({
+  visualToken: 0,
+  visualPending: false,
+  visualSound: false,
+  visualDuration: 0,
+  completeVisual: (token) => {
+    if (token !== get().visualToken) return;
+    const notify = get().visualSound;
+    set({ visualPending: false, visualSound: false });
+    if (notify) sound();
+  },
+  increment: 0,
+  clockAt: Date.now(),
+  clockHistory: [],
+  aiDelay: 500,
+  stepRequest: 0,
+  step: () => {
+    if (
+      get().mode === "ai" &&
+      !get().result &&
+      !get().thinking &&
+      !get().visualPending
+    )
+      set({ stepRequest: get().stepRequest + 1 });
+  },
   gameId: crypto.randomUUID(),
   createdAt: new Date().toISOString(),
   persist: async () => {
@@ -117,6 +179,8 @@ export const useGame = create<State>((set, get) => ({
         human: s.human,
         seconds: s.seconds,
         timeControl: s.timeControl,
+        increment: s.increment,
+        clockHistory: s.clockHistory,
         modelId: s.modelId,
         blackModelId: s.blackModelId,
         result: s.result,
@@ -141,6 +205,9 @@ export const useGame = create<State>((set, get) => ({
         human: saved.human,
         seconds: saved.seconds,
         timeControl: saved.timeControl,
+        increment: saved.increment ?? 0,
+        clockHistory: saved.clockHistory ?? [],
+        clockAt: null,
         modelId: saved.modelId,
         blackModelId: saved.blackModelId ?? "heuristic",
         running: false,
@@ -191,6 +258,8 @@ export const useGame = create<State>((set, get) => ({
       c = chess();
     if (
       s.result ||
+      !s.running ||
+      s.visualPending ||
       s.thinking ||
       (s.mode !== "local" && (s.mode === "ai" || c.turn() !== s.human))
     )
@@ -216,16 +285,25 @@ export const useGame = create<State>((set, get) => ({
   },
   move: (input) => {
     if (get().result) return;
+    get().tick();
+    if (get().result) return;
     try {
-      const c = chess();
+      const c = chess(),
+        color = c.turn(),
+        before = { ...get().seconds };
       c.move(input);
-      set({ redo: [] });
-      update(c);
-      sound();
+      set({
+        redo: [],
+        clockHistory: [...get().clockHistory, before],
+        seconds: get().timeControl
+          ? { ...before, [color]: before[color] + get().increment }
+          : before,
+      });
+      update(c, true, true);
       if (gameResult(c)) void get().save();
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : "Jogada inválida.",
+        error: error instanceof Error ? error.message : "Jogada invalida.",
       });
     }
   },
@@ -240,12 +318,13 @@ export const useGame = create<State>((set, get) => ({
       gameId: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       redo: [],
+      clockHistory: [],
       seconds: { w: s.timeControl, b: s.timeControl },
       running: true,
     });
     update(new Chess());
   },
-  load: (fen, pgn) => {
+  load: (fen, pgn, reportedResult) => {
     try {
       const c = loadGame(fen, pgn);
       set({
@@ -253,10 +332,15 @@ export const useGame = create<State>((set, get) => ({
         gameId: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
         redo: [],
+        clockHistory: [],
         running: false,
         seconds: { w: get().timeControl, b: get().timeControl },
       });
       update(c);
+      if (reportedResult && !gameResult(c)) {
+        set({ result: reportedResult });
+        void get().persist();
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "FEN / PGN inválido.",
@@ -270,6 +354,7 @@ export const useGame = create<State>((set, get) => ({
       set({
         redo: [
           {
+            seconds: { ...get().seconds },
             from: m.from,
             to: m.to,
             ...(m.promotion ? { promotion: m.promotion } : {}),
@@ -277,8 +362,10 @@ export const useGame = create<State>((set, get) => ({
           ...get().redo,
         ],
         running: false,
+        seconds: get().clockHistory.at(-1) ?? get().seconds,
+        clockHistory: get().clockHistory.slice(0, -1),
       });
-      update(c);
+      update(c, true);
     }
   },
   forward: () => {
@@ -286,27 +373,39 @@ export const useGame = create<State>((set, get) => ({
     if (m) {
       const c = chess();
       c.move(m);
-      set({ redo: rest, running: false });
-      update(c);
+      set({
+        redo: rest,
+        running: false,
+        clockHistory: [...get().clockHistory, { ...get().seconds }],
+        seconds: m.seconds ?? get().seconds,
+      });
+      update(c, true);
     }
   },
   tick: () => {
     const s = get();
-    if (!s.running || s.result || !s.history.length) return;
-    const color = new Chess(s.fen).turn();
+    if (!s.running || s.result || !s.timeControl || s.clockAt === null) return;
+    const color = new Chess(s.fen).turn(),
+      now = Date.now();
     const seconds = {
       ...s.seconds,
-      [color]: Math.max(0, s.seconds[color] - 1),
+      [color]: elapsedClock(s.seconds[color], s.clockAt, now),
     };
-    if (!seconds[color]) {
-      const c = new Chess(s.fen);
-      const result: GameResult = c.isInsufficientMaterial()
-        ? { result: "1/2-1/2", reason: "Tempo esgotado; material insuficiente" }
-        : { result: color === "w" ? "0-1" : "1-0", reason: "Tempo esgotado" };
-      set({ seconds, result, running: false, revision: s.revision + 1 });
+    if (seconds[color] <= 0) {
+      set({
+        seconds,
+        result: timeoutResult(new Chess(s.fen), color),
+        running: false,
+        clockAt: null,
+        revision: s.revision + 1,
+        thinking: false,
+        visualToken: s.visualToken + 1,
+        visualPending: false,
+        visualSound: false,
+      });
       void get().persist();
       void get().save();
-    } else set({ seconds });
+    } else set({ seconds, clockAt: now });
   },
   save: async () => {
     const s = get(),
@@ -342,7 +441,7 @@ export const useGame = create<State>((set, get) => ({
       result: s.result,
       white: c.getHeaders().White,
       black: c.getHeaders().Black,
-      timeControl: String(s.timeControl),
+      timeControl: s.timeControl ? `${s.timeControl}+${s.increment}` : "-",
       personalLearning: usePreferences.getState().value.personalLearning,
     };
     try {
@@ -361,7 +460,20 @@ export const useGame = create<State>((set, get) => ({
     }
   },
   configure: (data) => {
-    set({ ...data, revision: get().revision + 1, thinking: false });
+    get().tick();
+    const resetClock = data.timeControl !== undefined && !get().history.length;
+    set({
+      ...data,
+      ...(resetClock
+        ? {
+            seconds: { w: data.timeControl!, b: data.timeControl! },
+            clockHistory: [],
+          }
+        : {}),
+      clockAt: (data.running ?? get().running) ? Date.now() : null,
+      revision: get().revision + 1,
+      thinking: false,
+    });
     void get().persist();
   },
 }));

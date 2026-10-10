@@ -6,6 +6,8 @@ Xadrez 3D com motor heurístico, MCTS e um laboratório neural real no navegador
 
 ![Arena 3D](docs/assets/arena-desktop.png)
 
+A evolução mais recente inclui animações, temas, relógios com incremento, replay, revisão calculada, exercícios e comparação de gerações. Veja o [relatório de evolução](docs/EVOLUTION_REPORT.md) para os testes e as capturas do build local. A publicação do código no GitHub foi autorizada em 10 de outubro de 2026; a implantação dessa versão na Vercel não foi verificada nesta etapa.
+
 ## O que funciona
 
 - Tabuleiro procedural Three.js / React Three Fiber: peças esculpidas com curvas suaves, marfim/ébano, madeira, moldura arredondada, coordenadas, iluminação e reflexos de estúdio, sombras suaves, órbita, zoom, inversão, vista superior e perfis gráficos. Alternativa 2D com controles de teclado e fallback sem WebGL.
@@ -57,6 +59,7 @@ Partidas interrompidas pelo limite de jogadas são **empates adjudicados**, expl
 | Documento | Conteúdo |
 | --- | --- |
 | [FEATURES](docs/FEATURES.md) | Resumão, todas as funcionalidades e limites atuais |
+| [EVOLUTION_REPORT](docs/EVOLUTION_REPORT.md) | Evolução local, evidências de verificação e instruções para testar |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | UI, regras, workers, persistência e modo remoto |
 | [AI_DESIGN](docs/AI_DESIGN.md) | Encoding, ações, buscas e arquitetura da rede |
 | [TRAINING](docs/TRAINING.md) | Self-play, datasets, checkpoints, avaliação e limites |

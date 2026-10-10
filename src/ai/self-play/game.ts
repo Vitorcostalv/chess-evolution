@@ -58,7 +58,8 @@ export async function playGeneratedGame(options: {
     options.onMove?.(ply + 1, chess.fen());
     await cooperate();
   }
-  result = gameResult(chess) ?? {
+  const naturalResult = gameResult(chess);
+  result = naturalResult ?? {
     result: "1/2-1/2",
     reason: "Empate adjudicado: orçamento de jogadas",
   };
@@ -70,6 +71,7 @@ export async function playGeneratedGame(options: {
   chess.setHeader("Black", options.blackName);
   chess.setHeader("Result", result.result);
   const game: StoredGame = {
+    termination: naturalResult ? "rules" : "budget",
     id,
     name: `${options.mode === "selfplay" ? "Self-play" : "Avaliação"} · ${new Date().toLocaleString("pt-BR")}`,
     pgn: chess.pgn(),

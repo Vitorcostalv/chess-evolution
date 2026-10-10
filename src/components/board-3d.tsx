@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Environment,
@@ -6,10 +6,13 @@ import {
   OrbitControls,
   RoundedBox,
 } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import type { VisualPiece } from "@/services/games/presentation";
+import { THEMES, type Appearance } from "@/services/games/appearance";
 import { pieceInstances } from "@/services/games/pieces";
 import { Chess, type Square, type PieceSymbol, type Color } from "chess.js";
 import * as THREE from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { chessMaterials } from "./chess-materials";
 function updateZoom(camera: THREE.Camera, zoom: number) {
   if (camera instanceof THREE.OrthographicCamera) {
@@ -27,6 +30,14 @@ type Props = {
   flipped: boolean;
   top: boolean;
   graphics: "low" | "medium" | "high";
+  appearance?: Appearance;
+  pieces?: VisualPiece[];
+  started?: number;
+  duration?: number;
+  last?: Square[];
+  check?: Square;
+  cameraReset?: number;
+  onUnavailable?: () => void;
 };
 function Piece({
   type,
@@ -36,6 +47,9 @@ function Piece({
   assets,
   reduce,
   onSelect,
+  started,
+  duration,
+  exiting,
 }: {
   type: PieceSymbol;
   color: Color;
@@ -44,22 +58,32 @@ function Piece({
   assets: ReturnType<typeof chessMaterials>;
   reduce: boolean;
   onSelect: () => void;
+  started: number;
+  duration: number;
+  exiting?: boolean;
 }) {
   const ref = useRef<THREE.Group>(null),
     material = color === "w" ? assets.white : assets.black;
   const invalidate = useThree((s) => s.invalidate);
   const [origin] = useState<[number, number, number]>(() => [x, 0.12, z]);
   const target = useMemo(() => new THREE.Vector3(x, 0.12, z), [x, z]);
-  useEffect(() => invalidate(), [invalidate, x, z]);
-  useFrame((_, delta) => {
+  const from = useRef(new THREE.Vector3(x, 0.12, z));
+  useEffect(() => {
+    if (ref.current) from.current.copy(ref.current.position);
+    invalidate();
+  }, [invalidate, x, z, started, exiting]);
+  useFrame(() => {
     if (!ref.current) return;
-    if (reduce) ref.current.position.copy(target);
-    else
-      ref.current.position.lerp(
-        target,
-        1 - Math.exp(-Math.min(delta, 0.05) * 12),
-      );
-    if (ref.current.position.distanceTo(target) > 0.001) invalidate();
+    const t =
+      reduce || !duration || !started
+        ? 1
+        : Math.min(1, Math.max(0, (performance.now() - started) / duration));
+    const ease = t * t * (3 - 2 * t);
+    ref.current.position.lerpVectors(from.current, target, ease);
+    if (type === "n" && from.current.distanceTo(target) > 0.01)
+      ref.current.position.y += Math.sin(t * Math.PI) * 0.2;
+    ref.current.scale.setScalar(exiting ? 1 - Math.max(0, (t - 0.75) * 4) : 1);
+    if (t < 1) invalidate();
   });
   return (
     <group
@@ -68,7 +92,7 @@ function Piece({
       position={origin}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect();
+        if (e.delta <= 5 && !exiting) onSelect();
       }}
     >
       <mesh
@@ -168,25 +192,72 @@ function Piece({
 }
 function Scene(props: Props) {
   const assets = useMemo(
-    () => chessMaterials(props.graphics),
-    [props.graphics],
+    () => chessMaterials(props.graphics, props.appearance),
+    [props.graphics, props.appearance],
   );
   useEffect(() => () => assets.dispose(), [assets]);
+  const appearance = props.appearance ?? THEMES.classic;
   const { camera, invalidate, size } = useThree();
-  const fitZoom =
-    Math.min(size.width, size.height) * (props.top ? 0.096 : 0.078);
+  const fitZoom = props.top
+    ? Math.min(size.width, size.height) * 0.096
+    : Math.min(size.width * 0.078, size.height * 0.102);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+  const cameraMotion = useRef({
+    ready: false,
+    active: false,
+    at: 0,
+    from: new THREE.Vector3(),
+    to: new THREE.Vector3(),
+    fromZoom: 50,
+  });
   useEffect(() => {
     const side = props.flipped ? -1 : 1;
-    camera.position.set(
+    const motion = cameraMotion.current;
+    motion.from.copy(camera.position);
+    motion.to.set(
       props.top ? 0 : side * 9,
       props.top ? 16 : 12,
       props.top ? side * 0.001 : side * 10,
     );
-    updateZoom(camera, fitZoom);
-    camera.lookAt(0, 0.3, 0);
-    camera.updateProjectionMatrix();
+    motion.fromZoom = (camera as THREE.OrthographicCamera).zoom;
+    motion.at = performance.now();
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    motion.active = motion.ready && !reduced;
+    motion.ready = true;
+    if (!motion.active) {
+      camera.position.copy(motion.to);
+      updateZoom(camera, fitZoom);
+      camera.lookAt(0, 0.3, 0);
+      controlsRef.current?.update();
+    } else if (controlsRef.current) controlsRef.current.enabled = false;
     invalidate();
-  }, [camera, invalidate, props.top, props.flipped, fitZoom]);
+  }, [
+    camera,
+    invalidate,
+    props.top,
+    props.flipped,
+    fitZoom,
+    props.cameraReset,
+  ]);
+  useFrame(() => {
+    const motion = cameraMotion.current;
+    if (!motion.active) return;
+    const t = Math.min(1, (performance.now() - motion.at) / 260),
+      ease = t * t * (3 - 2 * t);
+    camera.position.lerpVectors(motion.from, motion.to, ease);
+    updateZoom(camera, motion.fromZoom + (fitZoom - motion.fromZoom) * ease);
+    camera.lookAt(0, 0.3, 0);
+    if (t < 1) invalidate();
+    else {
+      motion.active = false;
+      if (controlsRef.current) {
+        controlsRef.current.enabled = true;
+        controlsRef.current.update();
+      }
+    }
+  });
   const chess = new Chess(props.fen),
     reduce =
       typeof window !== "undefined" &&
@@ -288,7 +359,7 @@ function Scene(props: Props) {
               key={square}
               onClick={(e) => {
                 e.stopPropagation();
-                props.onSelect(square);
+                if (e.delta <= 5) props.onSelect(square);
               }}
             >
               <mesh position={[x, 0.045, z]} receiveShadow>
@@ -305,11 +376,25 @@ function Scene(props: Props) {
                   dispose={null}
                 />
               </mesh>
+              {(props.last?.includes(square) || props.check === square) && (
+                <mesh position={[x, 0.105, z]} rotation={[-Math.PI / 2, 0, 0]}>
+                  <ringGeometry args={[0.4, 0.47, 4, 1, Math.PI / 4]} />
+                  <meshBasicMaterial
+                    color={
+                      props.check === square
+                        ? appearance.check
+                        : appearance.lastMove
+                    }
+                    transparent
+                    opacity={0.85}
+                  />
+                </mesh>
+              )}
               {legal && (
                 <mesh position={[x, 0.104, z]} rotation={[-Math.PI / 2, 0, 0]}>
                   <ringGeometry args={[p ? 0.34 : 0.07, p ? 0.4 : 0.13, 24]} />
                   <meshBasicMaterial
-                    color="#e8d8ac"
+                    color={appearance.legal}
                     transparent
                     opacity={0.8}
                   />
@@ -330,7 +415,10 @@ function Scene(props: Props) {
             rotation={[-Math.PI / 2, 0, i < 8 ? 0 : -Math.PI / 2]}
           />
         ))}
-        {pieceInstances(props.initialFen, props.pgn).map((p) => (
+        {(
+          (props.pieces ??
+            pieceInstances(props.initialFen, props.pgn)) as VisualPiece[]
+        ).map((p) => (
           <Piece
             key={p.id}
             type={p.type}
@@ -339,6 +427,9 @@ function Scene(props: Props) {
             z={4.5 - Number(p.square[1])}
             assets={assets}
             reduce={reduce}
+            started={props.started ?? 0}
+            duration={props.duration ?? 0}
+            exiting={p.exiting}
             onSelect={() => props.onSelect(p.square)}
           />
         ))}
@@ -352,22 +443,33 @@ function Scene(props: Props) {
         <meshStandardMaterial color="#080d10" roughness={0.86} />
       </mesh>
       <OrbitControls
+        ref={controlsRef}
         makeDefault
         enablePan={false}
         minZoom={fitZoom * 0.7}
         maxZoom={fitZoom * 2.2}
-        minPolarAngle={0.05}
+        minPolarAngle={0.005}
         maxPolarAngle={Math.PI / 2.5}
         target={[0, 0.3, 0]}
       />
     </>
   );
 }
-export default function Board3D(props: Props) {
+function Board3D(props: Props) {
   return (
     <Canvas
       aria-label="Tabuleiro 3D interativo; arraste para orbitar, role para aproximar"
       shadows={props.graphics === "low" ? false : "variance"}
+      onCreated={({ gl }) => {
+        gl.domElement.addEventListener(
+          "webglcontextlost",
+          (event) => {
+            event.preventDefault();
+            props.onUnavailable?.();
+          },
+          { once: true },
+        );
+      }}
       orthographic
       frameloop="demand"
       dpr={[
@@ -386,3 +488,5 @@ export default function Board3D(props: Props) {
     </Canvas>
   );
 }
+
+export default memo(Board3D);
