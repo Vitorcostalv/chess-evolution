@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+model User {
+  id String @id @db.Uuid
+  createdAt DateTime @default(now())
+  games RemoteGame[]
+  models ModelMetadata[]
+}
+model RemoteGame {
+  id String @id @db.Uuid
+  ownerId String @db.Uuid
+  owner User @relation(fields:[ownerId],references:[id],onDelete:Cascade)
+  localId String @db.Uuid
+  payload Json
+  updatedAt DateTime @updatedAt
+  @@unique([ownerId,localId])
+  @@index([ownerId,updatedAt])
+}
+model ModelMetadata {
+  id String @id @db.Uuid
+  ownerId String @db.Uuid
+  owner User @relation(fields:[ownerId],references:[id],onDelete:Cascade)
+  localId String @db.Uuid
+  name String @db.VarChar(64)
+  hash String @db.VarChar(64)
+  generation Int
+  completedBatches Int
+  preset String @db.VarChar(16)
+  updatedAt DateTime @updatedAt
+  @@unique([ownerId,localId])
+  @@index([ownerId,updatedAt])
+}
+model RateBucket {
+  id String @id @db.VarChar(100)
+  count Int @default(1)
+  expiresAt DateTime
+  @@index([expiresAt])
+}
