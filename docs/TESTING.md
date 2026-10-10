@@ -57,6 +57,7 @@ Dados sintéticos usados em testes são fixtures declaradas. Métricas exibidas 
 10. Exercício resolvido por mate legal, reinício e preservação da partida da Arena.
 11. Avanço de um lance de IA com busca real e nova partida recusando resposta antiga.
 12. Duas gerações realmente treinadas e avaliadas sob condições equivalentes; comparação, PGNs assistíveis e distinção persistida de encerramento por orçamento.
+13. Tabuleiro 2D contido na área de jogo depois de iniciar a partida, sem cobrir relógios ou controles, em 1150×775, 1366×768, 1920×1080, 390×844 e 844×390. Verifica formato quadrado, 64 casas, ausência de overflow horizontal e uma jogada por clique.
 
 Screenshots e traces são gravados em `test-results` (ignorado no Git). Capturas selecionadas em `docs/assets` documentam a interface real. A documentação registra o estado dos checks no relatório de implementação.
 

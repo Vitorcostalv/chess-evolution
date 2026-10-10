@@ -88,6 +88,14 @@ Dados de testes são isolados por navegador. A fixture de status campeão no tes
 
 ## Evidências visuais locais
 
+### Correção de contenção do 2D — 10 de outubro de 2026
+
+Depois de iniciar a partida, a Arena compactava a altura disponível, mas o 2D continuava calculando seu tamanho somente pela largura. O tabuleiro ultrapassava a área de jogo e encobria relógios e controles. A área agora é um container de tamanho; o tabuleiro usa o menor limite entre sua largura e altura, preservando o quadrado e a prévia de aparência.
+
+O novo teste `tests/e2e/layout.spec.ts` reproduziu a falha antes da correção em 1150×775. Depois da correção, verifica contenção, ausência de sobreposição, 64 casas, ausência de overflow horizontal e interação em cinco tamanhos de tela. Lint, typecheck e build passaram; os 13 cenários de navegador passaram no build local em 1,3 minuto. Testes unitários não foram repetidos nesta correção de CSS; os 55 aprovados acima pertencem à validação anterior.
+
+[Captura da correção em 1150×775](assets/board-2d-contained.png).
+
 Capturas reais do build local; não representam uma publicação nova em produção.
 
 | Captura | Evidência |

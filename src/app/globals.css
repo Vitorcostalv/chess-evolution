@@ -261,6 +261,7 @@ footer i {
 .board-stage {
   height: clamp(460px, 47vw, 690px);
   position: relative;
+  container-type: size;
 }
 .loading-board {
   display: flex;
@@ -1129,6 +1130,10 @@ footer i {
 }
 .board-2d {
   border-color: var(--chess-border, #433023);
+}
+.board-stage > .board-2d {
+  /* Both dimensions matter when the running arena compacts its height. */
+  width: min(94cqw, 94cqh, 580px);
 }
 .square.last-move:before {
   content: "";
