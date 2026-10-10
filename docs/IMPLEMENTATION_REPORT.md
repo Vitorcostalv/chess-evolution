@@ -34,12 +34,14 @@ Rede compacta residual sem batch normalization, adequada a lotes pequenos. Tenso
 | Torneio interrompido | Jogos concluídos preservados; não retoma a partida incompleta. |
 | Regras de reivindicação FIDE | Três repetições e 50 movimentos são tratados como empate automático por este modo recreativo. 75 movimentos suportado com mate prioritário. Sem UI de reivindicação. |
 | Relógio competitivo | Timer recreativo local de um segundo; pausa/reload não constituem relógio certificado de torneio. |
-| Renderização avançada | Sem path tracing/reflexos dinâmicos ou GLTF; seis modelos procedurais, luzes/sombras e animação de movimentos. |
+| Renderização avançada | Seis peças procedurais suaves, madeira/marfim/ébano, coordenadas, moldura com bevel, ambiente de estúdio procedural, materiais físicos, sombras VSM e câmera ortográfica responsiva. Sem path tracing ou GLTF; o ambiente é estático, não um reflexo das outras peças. |
 | Métricas de memória | Bytes de tensores TF, estimativa; não mede toda a memória JS/GPU do navegador. |
 
 Partidas com orçamento curto são explicitamente **empates adjudicados**. Esses alvos podem concentrar draws e reduzir utilidade do value head. Uma candidata pode piorar; testes verificam que amostra insuficiente/resultado inferior não a promovem. Modelo inicial é **sem treino**, não um campeão pronto.
 
 ## Validação
+
+Revisão gráfica: `lint`, `typecheck`, os 44 testes de unidade e o build passaram. A suíte de navegador passou com 6 cenários; o novo cenário gráfico também passou novamente contra o build local de produção após o ajuste da vista superior. Ele cobre raycast 3D real, troca de câmera/lado, perfis baixo/alto e renderização mobile sem overflow ou erros de execução. As capturas do README foram renovadas. A verificação usa Chromium/SwiftShader e não mede desempenho de GPU física.
 
 44 testes de unidade/integração local passaram. Os 5 E2E Playwright passaram contra o build de produção local e novamente contra a **URL pública da Vercel**: 3D/2D, jogo completo/mobile, worker heurístico, treino/eval/torneio, reload, cancelamento/retomada e modo remoto desativado. `lint`, `typecheck`, `test` e `build` passaram antes de publicação. [GitHub Actions](https://github.com/Vitorcostalv/chess-evolution/actions/runs/38011616757) executou os mesmos checks e E2E com sucesso em Linux/Node 22; produção Vercel usou Node 24. `npm audit --omit=dev`: zero vulnerabilidades. O audit completo ainda relata 5 achados high na cadeia de glob/braces do tooling ESLint/Next; a versão corrente de braces não oferece correção compatível. Não são dependências do runtime de produção; não foi aplicado downgrade forçado de Next.
 

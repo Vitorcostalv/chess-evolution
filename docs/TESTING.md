@@ -48,6 +48,7 @@ Dados sintéticos usados em testes são fixtures declaradas. Métricas exibidas 
 3. Após checkpoint real, pausar/cancelar/recarregar/retomar treino até os 32 lotes configurados, com cursor consistente.
 4. Em viewport 390×844, jogar até xeque-mate, salvar/abrir biblioteca PGN e confirmar ausência de overflow horizontal.
 5. API remota declara desativada e rejeita origem estrangeira.
+6. Jogada `e4` por raycast real no tabuleiro 3D; troca de câmera e lado; perfis baixo/alto; viewport mobile sem overflow; capturas do tabuleiro e ausência de erros de execução.
 
 Screenshots e traces são gravados em `test-results` (ignorado no Git). Capturas selecionadas em `docs/assets` documentam a interface real. A documentação registra o estado dos checks no relatório de implementação.
 

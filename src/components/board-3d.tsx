@@ -1,115 +1,21 @@
-"use client";
+﻿"use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import {
+  Environment,
+  Lightformer,
+  OrbitControls,
+  RoundedBox,
+} from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { pieceInstances } from "@/services/games/pieces";
 import { Chess, type Square, type PieceSymbol, type Color } from "chess.js";
 import * as THREE from "three";
-const profiles: Record<PieceSymbol, [number, number][]> = {
-  p: [
-    [0.25, 0],
-    [0.28, 0.06],
-    [0.22, 0.13],
-    [0.13, 0.2],
-    [0.11, 0.46],
-    [0.19, 0.5],
-    [0.18, 0.55],
-    [0.1, 0.58],
-  ],
-  r: [
-    [0.28, 0],
-    [0.3, 0.08],
-    [0.23, 0.15],
-    [0.16, 0.25],
-    [0.16, 0.57],
-    [0.25, 0.62],
-    [0.25, 0.73],
-  ],
-  n: [
-    [0.28, 0],
-    [0.3, 0.08],
-    [0.22, 0.17],
-    [0.16, 0.24],
-  ],
-  b: [
-    [0.28, 0],
-    [0.3, 0.07],
-    [0.22, 0.16],
-    [0.12, 0.3],
-    [0.1, 0.58],
-    [0.21, 0.64],
-    [0.1, 0.71],
-  ],
-  q: [
-    [0.3, 0],
-    [0.32, 0.08],
-    [0.24, 0.18],
-    [0.12, 0.3],
-    [0.14, 0.68],
-    [0.22, 0.76],
-    [0.24, 0.84],
-    [0.18, 0.87],
-  ],
-  k: [
-    [0.3, 0],
-    [0.32, 0.08],
-    [0.25, 0.18],
-    [0.14, 0.33],
-    [0.15, 0.72],
-    [0.24, 0.79],
-    [0.19, 0.85],
-  ],
-};
-function resources(segments: number) {
-  const geometries = Object.fromEntries(
-    Object.entries(profiles).map(([type, points]) => [
-      type,
-      new THREE.LatheGeometry(
-        points.map(([x, y]) => new THREE.Vector2(x, y)),
-        segments,
-      ),
-    ]),
-  ) as Record<PieceSymbol, THREE.LatheGeometry>;
-  const shape = new THREE.Shape();
-  shape.moveTo(-0.2, 0);
-  shape.lineTo(-0.16, 0.5);
-  shape.lineTo(-0.05, 0.76);
-  shape.lineTo(0.05, 0.7);
-  shape.lineTo(0.14, 0.5);
-  shape.lineTo(0.3, 0.35);
-  shape.lineTo(0.29, 0.24);
-  shape.lineTo(0.12, 0.23);
-  shape.lineTo(0.02, 0.31);
-  shape.lineTo(0.02, 0.08);
-  shape.closePath();
-  const knight = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.19,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    steps: 1,
-    bevelSize: 0.025,
-    bevelThickness: 0.025,
-  });
-  knight.translate(0, 0, -0.095);
-  return {
-    geometries,
-    knight,
-    white: new THREE.MeshStandardMaterial({
-      color: "#e4dccb",
-      roughness: 0.34,
-      metalness: 0.08,
-    }),
-    black: new THREE.MeshStandardMaterial({
-      color: "#262f32",
-      roughness: 0.3,
-      metalness: 0.42,
-    }),
-    accent: new THREE.MeshStandardMaterial({
-      color: "#b19770",
-      roughness: 0.3,
-      metalness: 0.65,
-    }),
-  };
+import { chessMaterials } from "./chess-materials";
+function updateZoom(camera: THREE.Camera, zoom: number) {
+  if (camera instanceof THREE.OrthographicCamera) {
+    camera.zoom = zoom;
+    camera.updateProjectionMatrix();
+  }
 }
 type Props = {
   initialFen: string;
@@ -135,7 +41,7 @@ function Piece({
   color: Color;
   x: number;
   z: number;
-  assets: ReturnType<typeof resources>;
+  assets: ReturnType<typeof chessMaterials>;
   reduce: boolean;
   onSelect: () => void;
 }) {
@@ -158,6 +64,7 @@ function Piece({
   return (
     <group
       ref={ref}
+      dispose={null}
       position={origin}
       onClick={(e) => {
         e.stopPropagation();
@@ -171,8 +78,13 @@ function Piece({
         receiveShadow
       />
       {type === "p" && (
-        <mesh position={[0, 0.67, 0]} material={material} castShadow>
-          <sphereGeometry args={[0.18, 20, 12]} />
+        <mesh
+          position={[0, 0.69, 0]}
+          scale={0.175}
+          material={material}
+          castShadow
+        >
+          <primitive object={assets.sphere} attach="geometry" />
         </mesh>
       )}
       {type === "n" && (
@@ -183,37 +95,35 @@ function Piece({
             material={material}
             castShadow
           />
-          <mesh position={[-0.055, 0.76, 0.11]} material={assets.accent}>
-            <sphereGeometry args={[0.023, 8, 6]} />
+          <mesh
+            position={[0.025, 0.79, 0.145]}
+            scale={0.022}
+            material={assets.accent}
+          >
+            <primitive object={assets.sphere} attach="geometry" />
           </mesh>
         </group>
       )}
-      {type === "b" && (
-        <mesh
-          position={[0, 0.8, 0]}
-          scale={[0.65, 1, 0.65]}
-          rotation={[0, 0, -0.18]}
-          material={material}
-          castShadow
-        >
-          <sphereGeometry args={[0.18, 16, 12]} />
-        </mesh>
-      )}
+      {type === "b" &&
+        assets.bishop.map((geometry, i) => (
+          <mesh
+            key={i}
+            geometry={geometry}
+            position={[0, 0.73, 0]}
+            material={material}
+            castShadow
+          />
+        ))}
       {type === "r" &&
         Array.from({ length: 6 }, (_, i) => (
           <mesh
             key={i}
-            position={[
-              Math.cos((i * Math.PI) / 3) * 0.19,
-              0.78,
-              Math.sin((i * Math.PI) / 3) * 0.19,
-            ]}
-            rotation={[0, (-i * Math.PI) / 3, 0]}
+            geometry={assets.rook}
+            position={[0, 0.78, 0]}
+            rotation={[0, (i * Math.PI) / 3, 0]}
             material={material}
             castShadow
-          >
-            <boxGeometry args={[0.14, 0.16, 0.12]} />
-          </mesh>
+          />
         ))}
       {type === "q" &&
         Array.from({ length: 8 }, (_, i) => (
@@ -224,65 +134,104 @@ function Piece({
               0.93,
               Math.sin((i * Math.PI) / 4) * 0.19,
             ]}
-            material={assets.accent}
+            material={material}
+            scale={0.044}
             castShadow
           >
-            <sphereGeometry args={[0.055, 10, 8]} />
+            <primitive object={assets.sphere} attach="geometry" />
           </mesh>
         ))}
-      {type === "k" && (
-        <group position={[0, 1.02, 0]}>
-          <mesh material={material} castShadow>
-            <boxGeometry args={[0.085, 0.36, 0.085]} />
-          </mesh>
-          <mesh material={material} castShadow>
-            <boxGeometry args={[0.25, 0.08, 0.085]} />
-          </mesh>
-        </group>
+      {type === "q" && (
+        <mesh
+          geometry={assets.sphere}
+          position={[0, 1.01, 0]}
+          scale={0.065}
+          material={material}
+          castShadow
+        />
       )}
-      <mesh position={[0, 0.09, 0]} material={assets.accent}>
-        <torusGeometry args={[0.265, 0.012, 6, 24]} />
-      </mesh>
+      {type === "k" && (
+        <mesh
+          geometry={assets.cross}
+          position={[0, 0.91, 0]}
+          material={material}
+          castShadow
+        />
+      )}
+      <mesh
+        geometry={assets.ring}
+        position={[0, 0.065, 0]}
+        material={assets.accent}
+      />
     </group>
   );
 }
 function Scene(props: Props) {
   const assets = useMemo(
-    () => resources(props.graphics === "low" ? 16 : 32),
+    () => chessMaterials(props.graphics),
     [props.graphics],
   );
-  useEffect(
-    () => () => {
-      Object.values(assets.geometries).forEach((g) => g.dispose());
-      assets.knight.dispose();
-      assets.white.dispose();
-      assets.black.dispose();
-      assets.accent.dispose();
-    },
-    [assets],
-  );
-  const { camera, invalidate } = useThree();
+  useEffect(() => () => assets.dispose(), [assets]);
+  const { camera, invalidate, size } = useThree();
+  const fitZoom =
+    Math.min(size.width, size.height) * (props.top ? 0.096 : 0.078);
   useEffect(() => {
+    const side = props.flipped ? -1 : 1;
     camera.position.set(
-      props.top ? 0.001 : props.flipped ? -9 : 9,
-      props.top ? 13 : 10,
-      props.top ? 0 : props.flipped ? -9 : 9,
+      props.top ? 0 : side * 9,
+      props.top ? 16 : 12,
+      props.top ? side * 0.001 : side * 10,
     );
-    camera.lookAt(0, 0, 0);
+    updateZoom(camera, fitZoom);
+    camera.lookAt(0, 0.3, 0);
+    camera.updateProjectionMatrix();
     invalidate();
-  }, [camera, invalidate, props.top, props.flipped]);
+  }, [camera, invalidate, props.top, props.flipped, fitZoom]);
   const chess = new Chess(props.fen),
     reduce =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   return (
     <>
-      <color attach="background" args={["#14191b"]} />
-      <ambientLight intensity={0.65} />
-      <hemisphereLight args={["#ebe6db", "#302a24", 1.25]} />
+      <color attach="background" args={["#171e20"]} />
+      <fog attach="fog" args={["#171e20", 28, 65]} />
+      <ambientLight intensity={0.35} />
+      <hemisphereLight args={["#e7edf2", "#695242", 0.8]} />
+      {props.graphics !== "low" && (
+        <Environment
+          environmentIntensity={0.65}
+          resolution={props.graphics === "high" ? 256 : 128}
+          frames={1}
+        >
+          <Lightformer
+            form="rect"
+            position={[-4, 6, 2]}
+            target={[0, 0, 0]}
+            scale={[5, 7, 1]}
+            intensity={3}
+            color="#fff2df"
+          />
+          <Lightformer
+            form="rect"
+            position={[5, 3, -3]}
+            target={[0, 0, 0]}
+            scale={[3, 6, 1]}
+            intensity={2}
+            color="#dce9ff"
+          />
+          <Lightformer
+            form="rect"
+            position={[0, 7, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+            scale={[4, 4, 1]}
+            intensity={1.5}
+          />
+        </Environment>
+      )}
       <directionalLight
-        position={[-5, 10, -4]}
-        intensity={2.6}
+        position={[-3, 9, 5]}
+        intensity={1.8}
+        color="#fff1dc"
         castShadow={props.graphics !== "low"}
         shadow-mapSize={[
           props.graphics === "high" ? 2048 : 1024,
@@ -292,22 +241,39 @@ function Scene(props: Props) {
         shadow-camera-right={7}
         shadow-camera-top={7}
         shadow-camera-bottom={-7}
-        shadow-bias={-0.0005}
+        shadow-camera-near={1}
+        shadow-camera-far={24}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.025}
+        shadow-radius={3}
+        shadow-blurSamples={8}
       />
-      <directionalLight position={[6, 3, 6]} intensity={0.8} color="#cbb18a" />
+      <directionalLight position={[5, 5, -6]} intensity={1.3} color="#dbe7ff" />
       <group>
-        <mesh position={[0, -0.2, 0]} receiveShadow>
-          <boxGeometry args={[8.7, 0.55, 8.7]} />
-          <meshStandardMaterial color="#372c24" roughness={0.5} />
-        </mesh>
-        <mesh position={[0, -0.43, 0]}>
-          <boxGeometry args={[9, 0.15, 9]} />
-          <meshStandardMaterial
-            color="#a58b62"
-            metalness={0.55}
-            roughness={0.3}
-          />
-        </mesh>
+        <RoundedBox
+          args={[8.8, 0.42, 8.8]}
+          radius={0.09}
+          smoothness={4}
+          position={[0, -0.12, 0]}
+          material={assets.frame}
+          castShadow
+          receiveShadow
+        />
+        <RoundedBox
+          args={[8.85, 0.035, 8.85]}
+          radius={0.015}
+          smoothness={2}
+          position={[0, -0.3, 0]}
+          material={assets.accent}
+        />
+        <RoundedBox
+          args={[8.7, 0.08, 8.7]}
+          radius={0.03}
+          smoothness={2}
+          position={[0, -0.36, 0]}
+          material={assets.frame}
+          castShadow
+        />
         {Array.from({ length: 64 }, (_, i) => {
           const file = i % 8,
             rank = 8 - Math.floor(i / 8),
@@ -327,15 +293,16 @@ function Scene(props: Props) {
             >
               <mesh position={[x, 0.045, z]} receiveShadow>
                 <boxGeometry args={[1, 0.1, 1]} />
-                <meshStandardMaterial
-                  color={
+                <primitive
+                  object={
                     chosen
-                      ? "#af9868"
+                      ? assets.selected
                       : (file + rank) % 2
-                        ? "#ad9a7c"
-                        : "#52615c"
+                        ? assets.lightTile
+                        : assets.darkTile
                   }
-                  roughness={0.78}
+                  attach="material"
+                  dispose={null}
                 />
               </mesh>
               {legal && (
@@ -351,6 +318,18 @@ function Scene(props: Props) {
             </group>
           );
         })}
+        {assets.labels.map((geometry, i) => (
+          <mesh
+            key={`label-${i}`}
+            geometry={geometry}
+            material={assets.labelMaterial}
+            dispose={null}
+            position={
+              i < 8 ? [i - 3.5, 0.096, 4.2] : [-4.2, 0.096, 3.5 - (i - 8)]
+            }
+            rotation={[-Math.PI / 2, 0, i < 8 ? 0 : -Math.PI / 2]}
+          />
+        ))}
         {pieceInstances(props.initialFen, props.pgn).map((p) => (
           <Piece
             key={p.id}
@@ -365,21 +344,21 @@ function Scene(props: Props) {
         ))}
       </group>
       <mesh
-        position={[0, -0.6, 0]}
+        position={[0, -0.43, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         receiveShadow
       >
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#14191b" roughness={0.95} />
+        <meshStandardMaterial color="#080d10" roughness={0.86} />
       </mesh>
       <OrbitControls
         makeDefault
         enablePan={false}
-        minDistance={9}
-        maxDistance={19}
+        minZoom={fitZoom * 0.7}
+        maxZoom={fitZoom * 2.2}
         minPolarAngle={0.05}
         maxPolarAngle={Math.PI / 2.5}
-        target={[0, 0, 0]}
+        target={[0, 0.3, 0]}
       />
     </>
   );
@@ -388,14 +367,20 @@ export default function Board3D(props: Props) {
   return (
     <Canvas
       aria-label="Tabuleiro 3D interativo; arraste para orbitar, role para aproximar"
-      shadows={props.graphics !== "low"}
+      shadows={props.graphics === "low" ? false : "variance"}
+      orthographic
       frameloop="demand"
       dpr={[
         1,
         props.graphics === "low" ? 1 : props.graphics === "medium" ? 1.5 : 2,
       ]}
-      camera={{ position: [9, 10, 9], fov: 40 }}
-      gl={{ antialias: props.graphics !== "low", powerPreference: "low-power" }}
+      camera={{ position: [9, 12, 10], zoom: 50, near: 0.1, far: 100 }}
+      gl={{
+        antialias: props.graphics !== "low",
+        powerPreference: "low-power",
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1,
+      }}
     >
       <Scene {...props} />
     </Canvas>

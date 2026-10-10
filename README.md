@@ -8,7 +8,7 @@ Xadrez 3D com motor heurístico, MCTS e um laboratório neural real no navegador
 
 ## O que funciona
 
-- Tabuleiro procedural Three.js / React Three Fiber, seis peças distinguíveis, sombras, órbita, zoom, inversão, vista superior e perfis gráficos. Alternativa 2D com controles de teclado e fallback sem WebGL.
+- Tabuleiro procedural Three.js / React Three Fiber: peças esculpidas com curvas suaves, marfim/ébano, madeira, moldura arredondada, coordenadas, iluminação e reflexos de estúdio, sombras suaves, órbita, zoom, inversão, vista superior e perfis gráficos. Alternativa 2D com controles de teclado e fallback sem WebGL.
 - Humano × IA, IA × IA e dois jogadores. Regras oficiais de movimento, roque, en passant, quatro promoções, xeque-mate, empates, relógios, desfazer/refazer, FEN e PGN.
 - Negamax com alpha-beta, aprofundamento iterativo, quiescência, ordenação e tabela de transposição sensível ao histórico. MCTS/PUCT com máscara de ações legais e policy/value neural.
 - CNN residual TensorFlow.js com presets Tiny, Standard e Research. Treinamento por Adam, losses calculadas, replay limitado, separação por partida, checkpoints com pesos/otimizador/hash SHA-256 e retomada consistente.
@@ -16,6 +16,8 @@ Xadrez 3D com motor heurístico, MCTS e um laboratório neural real no navegador
 - Torneio round-robin entre 2–4 modelos; classificação e PGNs de partidas efetivamente jogadas.
 - IndexedDB para partidas, modelos, experimentos, torneios e recuperação da arena. Importação/exportação de modelos e PGNs. Aprendizado de partidas humanas somente com consentimento.
 - API opcional de backup PostgreSQL/Prisma com sessão assinada, isolamento por proprietário, limites e validação. Desativada nesta implantação; o jogo local continua funcionando.
+
+Veja a [lista completa de funcionalidades e resumão do projeto](docs/FEATURES.md), organizada por Arena, motores, treinamento, modelos, torneios, partidas e ajustes.
 
 ## Executar localmente
 
@@ -54,6 +56,7 @@ Partidas interrompidas pelo limite de jogadas são **empates adjudicados**, expl
 
 | Documento | Conteúdo |
 | --- | --- |
+| [FEATURES](docs/FEATURES.md) | Resumão, todas as funcionalidades e limites atuais |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | UI, regras, workers, persistência e modo remoto |
 | [AI_DESIGN](docs/AI_DESIGN.md) | Encoding, ações, buscas e arquitetura da rede |
 | [TRAINING](docs/TRAINING.md) | Self-play, datasets, checkpoints, avaliação e limites |
