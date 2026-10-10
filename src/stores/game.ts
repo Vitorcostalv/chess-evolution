@@ -313,11 +313,23 @@ export const useGame = create<State>((set, get) => ({
       c = chess();
     c.setHeader(
       "White",
-      s.mode === "ai" ? "IA branca" : s.human === "w" ? "Você" : "Motor",
+      s.mode === "local"
+        ? "Brancas"
+        : s.mode === "ai"
+          ? "IA branca"
+          : s.human === "w"
+            ? "Você"
+            : "Motor",
     );
     c.setHeader(
       "Black",
-      s.mode === "ai" ? "IA preta" : s.human === "b" ? "Você" : "Motor",
+      s.mode === "local"
+        ? "Pretas"
+        : s.mode === "ai"
+          ? "IA preta"
+          : s.human === "b"
+            ? "Você"
+            : "Motor",
     );
     c.setHeader("Result", s.result?.result ?? "*");
     const game: StoredGame = {

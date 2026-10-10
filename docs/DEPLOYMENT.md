@@ -10,7 +10,7 @@ vercel link --yes --project chess-evolution --scope vitorcostalvs-projects
 vercel --prod --yes --scope vitorcostalvs-projects
 ```
 
-A integração Git conecta `main` à produção e branches a previews. A URL canônica implantada será registrada no README/relatório. Consulte `/api/health`: armazenamento IndexedDB e treino browser-workers são explícitos. `/api/remote/status` informa se backup remoto está configurado.
+A integração Git conecta `main` à produção e branches a previews. URL canônica: **https://chess-evolution.vercel.app**. Consulte `/api/health`: armazenamento IndexedDB e treino browser-workers são explícitos. `/api/remote/status` informa se backup remoto está configurado.
 
 Nenhuma função Vercel fica treinando modelos, portanto não depende de duração longa, Docker, Redis ou serviços pagos de IA. Uma aba fechada para o treino; seus checkpoints continuam disponíveis no mesmo navegador e origem.
 

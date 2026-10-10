@@ -41,6 +41,17 @@ Partidas com orçamento curto são explicitamente **empates adjudicados**. Esses
 
 ## Validação
 
-44 testes de unidade/integração local passaram. Os 5 E2E Playwright passaram contra o build de produção local: 3D/2D, jogo completo/mobile, worker heurístico, treino/eval/torneio, reload, cancelamento/retomada e modo remoto desativado. `lint`, `typecheck`, `test` e `build` passaram antes de publicação. `npm audit --omit=dev`: zero vulnerabilidades. O audit completo ainda relata 5 achados high na cadeia de glob/braces do tooling ESLint/Next; a versão corrente de braces não oferece correção compatível. Não são dependências do runtime de produção; não foi aplicado downgrade forçado de Next. URLs e verificações pós-deploy serão acrescentadas após a publicação.
+44 testes de unidade/integração local passaram. Os 5 E2E Playwright passaram contra o build de produção local e novamente contra a **URL pública da Vercel**: 3D/2D, jogo completo/mobile, worker heurístico, treino/eval/torneio, reload, cancelamento/retomada e modo remoto desativado. `lint`, `typecheck`, `test` e `build` passaram antes de publicação. [GitHub Actions](https://github.com/Vitorcostalv/chess-evolution/actions/runs/38011616757) executou os mesmos checks e E2E com sucesso em Linux/Node 22; produção Vercel usou Node 24. `npm audit --omit=dev`: zero vulnerabilidades. O audit completo ainda relata 5 achados high na cadeia de glob/braces do tooling ESLint/Next; a versão corrente de braces não oferece correção compatível. Não são dependências do runtime de produção; não foi aplicado downgrade forçado de Next.
 
 Integração SQL real, rating competitivo e amplo benchmark de dispositivos não foram executados. Não são apresentados como concluídos.
+
+## Publicação
+
+- Repositório público: [Vitorcostalv/chess-evolution](https://github.com/Vitorcostalv/chess-evolution).
+- Produção: [chess-evolution.vercel.app](https://chess-evolution.vercel.app).
+- Integração GitHub → Vercel conectada, branch `main` em produção.
+- `/api/health`: HTTP 200, `status: ok`, `training: browser-workers`, `remoteSync: false`.
+- `/api/remote/status`: HTTP 200, `enabled: false`, `weightsSync: false`.
+- Sem banco provisionado, Docker, chaves de IA pagas ou serviço de treino residente.
+- Segredos `.env.local`/`.vercel` ignorados pelo Git; somente `.env.example` foi publicado.
+- Capturas de desktop/mobile incluídas no README/documentação; servidores locais de prévia encerrados após QA.
